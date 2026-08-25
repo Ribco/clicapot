@@ -1,31 +1,36 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/Ribco/clicapot/internal/api"
+	"github.com/Ribco/clicapot/internal/database"
 )
 
-type HealthResponse struct {
-	Service string `json:"service"`
-	Status  string `json:"status"`
-	Version string `json:"version"`
-}
-
 func main() {
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+	dataDir := os.Getenv("CLICAPOT_DATA")
+	if dataDir == "" {
+		dataDir = "./data"
+	}
 
-		_ = json.NewEncoder(w).Encode(HealthResponse{
-			Service: "clicapot",
-			Status:  "ok",
-			Version: "0.1.0",
-		})
-	})
+	db, err := database.Open(dataDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 
-	log.Println("☁️ Clicapot v0.1.0 listening on :8000")
+	if err := database.Migrate(db); err != nil {
+		log.Fatal(err)
+	}
 
-	if err := http.ListenAndServe(":8000", nil); err != nil {
+	router := api.NewRouter(db)
+
+	log.Println("☁️ Clicapot v0.1.0")
+	log.Println("🚀 Listening on :8000")
+
+	if err := http.ListenAndServe(":8000", router); err != nil {
 		log.Fatal(err)
 	}
 }
