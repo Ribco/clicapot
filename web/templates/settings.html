@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clicapot — Settings</title>
+<link rel="stylesheet" href="/static/css/clicapot.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><span class="brand-mark">☁</span> Clicapot</div>
+
+    <nav>
+      <a href="/dashboard">Overview</a>
+      <a href="#">Websites</a>
+      <a href="#">DNS</a>
+      <a href="#">Security</a>
+      <a href="#">Analytics</a>
+
+      <div class="nav-label">Developer</div>
+      <a href="#">Workers</a>
+      <a href="#">Pages</a>
+      <a href="#">Storage</a>
+      <a href="#">KV</a>
+      <a href="#">Tunnels</a>
+
+      <div class="nav-label">Account</div>
+      <a href="#">API Keys</a>
+      <a class="active" href="/settings">Settings</a>
+    </nav>
+
+    <button id="logout" class="logout">Sign out</button>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button id="menu" class="menu">☰</button>
+      <div>
+        <div class="eyebrow">Clicapot</div>
+        <h2>Settings</h2>
+      </div>
+    </header>
+
+    <section class="content">
+      <div class="hero">
+        <div class="eyebrow">Account</div>
+        <h1>Settings</h1>
+        <p class="muted">Customize your Clicapot experience.</p>
+      </div>
+
+      <div class="settings-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <h3>Appearance</h3>
+            <p class="muted">Choose how Clicapot looks.</p>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <strong>Theme</strong>
+              <p class="muted">Switch between light and dark mode.</p>
+            </div>
+
+            <div class="theme-buttons">
+              <button class="theme-btn" data-theme="light">☀ Light</button>
+              <button class="theme-btn" data-theme="dark">☾ Dark</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="/static/js/settings.js"></script>
+</body>
+</html>

@@ -341,3 +341,66 @@ nav a.active {
     padding: 25px;
   }
 }
+
+.settings-grid {
+  max-width: 900px;
+}
+
+.setting-row {
+  padding: 22px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.setting-row strong {
+  font-size: 15px;
+}
+
+.setting-row p {
+  margin: 3px 0 0;
+}
+
+.theme-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.theme-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 7px;
+  padding: 9px 13px;
+  cursor: pointer;
+}
+
+.theme-btn:hover,
+.theme-btn.selected {
+  border-color: var(--accent);
+}
+
+body.dark {
+  --bg: #111315;
+  --surface: #191c1f;
+  --surface-2: #23272b;
+  --text: #f2f4f5;
+  --muted: #9ca3aa;
+  --border: #30353a;
+  --shadow: 0 8px 30px rgba(0,0,0,.25);
+}
+
+body.dark .sidebar,
+body.dark .topbar {
+  background: var(--surface);
+}
+
+@media (max-width: 600px) {
+  .setting-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.sidebar{height:100vh;max-height:100vh;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;position:sticky;top:0}.sidebar::-webkit-scrollbar{width:6px}.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:999px}.sidebar::-webkit-scrollbar-track{background:transparent}

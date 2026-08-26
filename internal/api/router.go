@@ -35,6 +35,16 @@ func NewRouter(db *sql.DB) http.Handler {
 		_, _ = w.Write(data)
 	})
 
+	mux.HandleFunc("/settings", func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile("web/templates/settings.html")
+		if err != nil {
+			http.Error(w, "frontend unavailable", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write(data)
+	})
+
 	mux.HandleFunc("/dashboard", func(w http.ResponseWriter, r *http.Request) {
 		data, err := os.ReadFile("web/templates/dashboard.html")
 		if err != nil {
