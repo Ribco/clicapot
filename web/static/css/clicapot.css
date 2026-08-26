@@ -381,7 +381,7 @@ nav a.active {
   border-color: var(--accent);
 }
 
-body.dark {
+html.dark body, body.dark {
   --bg: #111315;
   --surface: #191c1f;
   --surface-2: #23272b;
@@ -391,7 +391,9 @@ body.dark {
   --shadow: 0 8px 30px rgba(0,0,0,.25);
 }
 
+html.dark body .sidebar,
 body.dark .sidebar,
+html.dark body .topbar,
 body.dark .topbar {
   background: var(--surface);
 }
@@ -404,3 +406,167 @@ body.dark .topbar {
 }
 
 .sidebar{height:100vh;max-height:100vh;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;position:sticky;top:0}.sidebar::-webkit-scrollbar{width:6px}.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:999px}.sidebar::-webkit-scrollbar-track{background:transparent}
+
+/* =========================================================
+   WEBSITES GOLD
+   ========================================================= */
+
+.website-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.website-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.website-card {
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px;
+    transition:
+        transform .15s ease,
+        border-color .15s ease,
+        box-shadow .15s ease;
+}
+
+.website-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+
+body.dark .website-card:hover {
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+
+.website-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.website-name {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.website-slug {
+    margin-top: 5px;
+    font-size: 13px;
+    opacity: .55;
+}
+
+.website-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(34,197,94,.12);
+    color: #22c55e;
+    white-space: nowrap;
+}
+
+.website-status::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.website-info {
+    display: flex;
+    gap: 18px;
+    margin-top: 20px;
+    font-size: 12px;
+    opacity: .6;
+}
+
+.website-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.website-btn {
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: inherit;
+    border-radius: 9px;
+    padding: 9px 13px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .15s ease;
+}
+
+.website-btn:hover {
+    border-color: #2563eb;
+}
+
+.website-btn-primary {
+    border-color: #2563eb;
+    background: #2563eb;
+    color: white;
+}
+
+.website-btn-primary:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.website-btn-danger {
+    color: #ef4444;
+}
+
+.website-btn-danger:hover {
+    border-color: #ef4444;
+    background: rgba(239,68,68,.08);
+}
+
+.website-empty {
+    text-align: center;
+    padding: 50px 20px;
+    border: 1px dashed var(--border);
+    border-radius: 16px;
+}
+
+.website-empty h3 {
+    margin: 0 0 7px;
+}
+
+.website-empty p {
+    margin: 0;
+}
+
+@media (max-width: 700px) {
+    .website-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .website-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .website-card-head {
+        flex-direction: column;
+    }
+
+    .website-actions {
+        flex-wrap: wrap;
+    }
+}
+

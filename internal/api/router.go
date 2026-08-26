@@ -36,10 +36,47 @@ func NewRouter(db *sql.DB) http.Handler {
 		_, _ = w.Write(data)
 	})
 
+	mux.HandleFunc("/dns", func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile("web/templates/dns.html")
+		if err != nil {
+			http.Error(w, "DNS page unavailable", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write(data)
+	})
+
+	for _, path := range []string{
+		"/security", "/analytics", "/developer",
+		"/workers", "/pages", "/storage", "/kv", "/tunnels",
+		"/account", "/api-keys",
+	} {
+		path := path
+		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+			data, err := os.ReadFile("web/templates/coming-soon.html")
+			if err != nil {
+				http.Error(w, "frontend unavailable", http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write(data)
+		})
+	}
+
 	mux.HandleFunc("/settings", func(w http.ResponseWriter, r *http.Request) {
 		data, err := os.ReadFile("web/templates/settings.html")
 		if err != nil {
 			http.Error(w, "frontend unavailable", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write(data)
+	})
+
+	mux.HandleFunc("/websites", func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile("web/templates/websites.html")
+		if err != nil {
+			http.Error(w, "Websites page unavailable", http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

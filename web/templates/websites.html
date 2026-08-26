@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Websites · Clicapot</title>
+<link rel="stylesheet" href="/static/css/clicapot.css">
+<script src="/static/js/theme.js"></script>
+</head>
+
+<body>
+<div class="app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark">☁</span> Clicapot
+    </div>
+
+    <nav>
+      <a href="/dashboard">Overview</a>
+      <a class="active" href="/websites">Websites</a>
+      <a href="/dns">DNS</a>
+      <a href="/security">Security</a>
+      <a href="/analytics">Analytics</a>
+
+      <div class="nav-label">Developer</div>
+      <a href="/workers">Workers</a>
+      <a href="/pages">Pages</a>
+      <a href="/storage">Storage</a>
+      <a href="/kv">KV</a>
+      <a href="/tunnels">Tunnels</a>
+
+      <div class="nav-label">Account</div>
+      <a href="/api-keys">API Keys</a>
+      <a href="/settings">Settings</a>
+    </nav>
+
+    <button id="logout" class="logout">Sign out</button>
+  </aside>
+
+  <main class="main">
+
+    <header class="topbar">
+      <button id="menu" class="menu">☰</button>
+
+      <div>
+        <div class="eyebrow">Clicapot</div>
+        <h2>Websites</h2>
+      </div>
+    </header>
+
+    <section class="content">
+
+      <div class="hero">
+        <div>
+          <div class="eyebrow">Websites</div>
+          <h1>Your websites</h1>
+          <p class="muted">
+            Manage your projects, domains and deployments.
+          </p>
+        </div>
+
+        <button class="website-btn website-btn-primary" id="createWebsite">
+          + Add website
+        </button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3>Websites</h3>
+            <p class="muted">Your Clicapot projects.</p>
+          </div>
+        </div>
+
+        <div id="websites" class="website-grid">
+          <div class="website-empty">
+            <h3>Loading websites…</h3>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+</div>
+
+<script>
+const websites = document.getElementById("websites");
+
+async function loadWebsites() {
+    try {
+        const response = await fetch("/api/v1/projects");
+
+        if (!response.ok) {
+            throw new Error("Failed to load websites");
+        }
+
+        const data = await response.json();
+
+        if (!data.projects || data.projects.length === 0) {
+            websites.innerHTML = `
+                <div class="website-empty">
+                    <h3>No websites yet</h3>
+                    <p class="muted">
+                        Create your first website to get started.
+                    </p>
+                </div>
+            `;
+            return;
+        }
+
+        websites.innerHTML = data.projects.map(project => `
+            <article class="website-card">
+                <div class="website-card-head">
+                    <div>
+                        <h3 class="website-name">${escapeHTML(project.name)}</h3>
+                        <div class="website-slug">${escapeHTML(project.slug)}</div>
+                    </div>
+
+                    <span class="website-status">Active</span>
+                </div>
+
+                <div class="website-info">
+                    <span>Project #${project.id}</span>
+                    <span>${new Date(project.created_at).toLocaleDateString()}</span>
+                </div>
+
+                <div class="website-actions">
+                    <button
+                        class="website-btn website-btn-primary"
+                        onclick="manageWebsite(${project.id})">
+                        Manage
+                    </button>
+
+                    <button
+                        class="website-btn website-btn-danger"
+                        onclick="deleteWebsite(${project.id}, '${escapeHTML(project.name)}')">
+                        Delete
+                    </button>
+                </div>
+            </article>
+        `).join("");
+
+    } catch (error) {
+        websites.innerHTML = `
+            <div class="website-empty">
+                <h3>Could not load websites</h3>
+                <p class="muted">${escapeHTML(error.message)}</p>
+            </div>
+        `;
+    }
+}
+
+function escapeHTML(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function manageWebsite(id) {
+    window.location.href = "/websites/" + id;
+}
+
+async function deleteWebsite(id, name) {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) {
+        return;
+    }
+
+    const response = await fetch("/api/v1/projects/" + id, {
+        method: "DELETE"
+    });
+
+    if (!response.ok) {
+        alert("Failed to delete website.");
+        return;
+    }
+
+    loadWebsites();
+}
+
+document.getElementById("createWebsite").addEventListener("click", async () => {
+    const name = prompt("Website name:");
+
+    if (!name) {
+        return;
+    }
+
+    const slug = prompt(
+        "Website slug:",
+        name.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+    );
+
+    if (!slug) {
+        return;
+    }
+
+    const response = await fetch("/api/v1/projects", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            name,
+            slug
+        })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        alert(data.error || "Failed to create website.");
+        return;
+    }
+
+    loadWebsites();
+});
+
+document.getElementById("menu")?.addEventListener("click", () => {
+    document.getElementById("sidebar")?.classList.toggle("open");
+});
+
+document.getElementById("logout")?.addEventListener("click", async () => {
+    await fetch("/api/v1/auth/logout", {
+        method: "POST"
+    });
+
+    location.href = "/";
+});
+
+loadWebsites();
+</script>
+
+</body>
+</html>

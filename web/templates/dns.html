@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DNS · Clicapot</title>
+  <link rel="stylesheet" href="/static/css/clicapot.css">
+  <style>
+    .dns-page{padding:32px;max-width:1200px;margin:auto}
+    .dns-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px}
+    .dns-head h1{margin:0}
+    .dns-head p{margin:6px 0 0;opacity:.65}
+    .dns-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+    .dns-card{border:1px solid var(--border);border-radius:16px;padding:20px;background:var(--card)}
+    .dns-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .dns-card h2{font-size:18px;margin:0}
+    .dns-status{font-size:12px;padding:5px 9px;border-radius:999px;background:rgba(34,197,94,.12);color:#22c55e}
+    .dns-records{margin-top:18px;border-top:1px solid var(--border)}
+    .dns-record{display:grid;grid-template-columns:60px 1fr 1.5fr 70px 32px;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:13px}
+    .dns-record:last-child{border-bottom:0}
+    .dns-type{font-weight:700}
+    .dns-muted{opacity:.55}
+    .dns-actions{display:flex;gap:10px;margin-top:16px}
+    .dns-btn{border:1px solid var(--border);background:transparent;color:inherit;border-radius:9px;padding:8px 12px;cursor:pointer}
+    .dns-btn.primary{background:#2563eb;color:white;border-color:#2563eb}
+    .dns-btn.danger{color:#ef4444}
+    .dns-empty{padding:24px 0;text-align:center;opacity:.55}
+    .dns-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
+    .dns-modal.open{display:flex}
+    .dns-dialog{width:min(480px,100%);background:var(--card);border:1px solid var(--border);border-radius:18px;padding:24px}
+    .dns-dialog h2{margin-top:0}
+    .dns-field{margin-bottom:14px}
+    .dns-field label{display:block;font-size:13px;margin-bottom:6px;opacity:.7}
+    .dns-field input,.dns-field select{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--border);border-radius:9px;background:transparent;color:inherit}
+    .dns-dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+    @media(max-width:700px){
+      .dns-page{padding:20px 14px}
+      .dns-head{align-items:flex-start;flex-direction:column}
+      .dns-record{grid-template-columns:55px 1fr 32px}
+      .dns-record .dns-content,.dns-record .dns-ttl{grid-column:2}
+      .dns-record .dns-delete{grid-column:3;grid-row:1 / span 2}
+    }
+  </style>
+  <script src="/static/js/theme.js"></script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">☁ <span>Clicapot</span></div>
+      <nav>
+        <a href="/dashboard">Overview</a>
+        <a href="/websites">Websites</a>
+        <a class="active" href="/dns">DNS</a>
+        <a href="/security">Security</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/developer">Developer</a>
+        <a href="/workers">Workers</a>
+        <a href="/pages">Pages</a>
+        <a href="/storage">Storage</a>
+        <a href="/kv">KV</a>
+        <a href="/tunnels">Tunnels</a>
+        <a href="/account">Account</a>
+        <a href="/api-keys">API Keys</a>
+        <a href="/settings">Settings</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <a href="/logout">Sign out</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="dns-page">
+        <div class="dns-head">
+          <div>
+            <h1>DNS</h1>
+            <p>Manage your DNS zones and records.</p>
+          </div>
+          <button class="dns-btn primary" onclick="openZoneModal()">+ Add zone</button>
+        </div>
+
+        <div id="zones" class="dns-grid">
+          <div class="dns-empty">Loading DNS zones…</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="zoneModal" class="dns-modal">
+    <div class="dns-dialog">
+      <h2>Add DNS zone</h2>
+      <div class="dns-field">
+        <label>Domain</label>
+        <input id="zoneName" placeholder="example.com">
+      </div>
+      <div class="dns-dialog-actions">
+        <button class="dns-btn" onclick="closeModals()">Cancel</button>
+        <button class="dns-btn primary" onclick="createZone()">Create zone</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="recordModal" class="dns-modal">
+    <div class="dns-dialog">
+      <h2>Add DNS record</h2>
+      <input type="hidden" id="recordZone">
+      <div class="dns-field">
+        <label>Type</label>
+        <select id="recordType">
+          <option>A</option>
+          <option>AAAA</option>
+          <option>CNAME</option>
+          <option>MX</option>
+          <option>TXT</option>
+          <option>NS</option>
+        </select>
+      </div>
+      <div class="dns-field">
+        <label>Name</label>
+        <input id="recordName" placeholder="@">
+      </div>
+      <div class="dns-field">
+        <label>Content</label>
+        <input id="recordContent" placeholder="192.0.2.1">
+      </div>
+      <div class="dns-field">
+        <label>TTL</label>
+        <input id="recordTTL" type="number" value="300" min="60">
+      </div>
+      <div class="dns-dialog-actions">
+        <button class="dns-btn" onclick="closeModals()">Cancel</button>
+        <button class="dns-btn primary" onclick="createRecord()">Add record</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/dns.js"></script>
+</body>
+</html>
