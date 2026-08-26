@@ -53,6 +53,7 @@ func Migrate(db *sql.DB) error {
 			user_id INTEGER NOT NULL,
 			name TEXT NOT NULL,
 			key_hash TEXT NOT NULL UNIQUE,
+			scopes TEXT NOT NULL DEFAULT '["account:read","projects:read","projects:write"]',
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		);
@@ -74,6 +75,10 @@ func Migrate(db *sql.DB) error {
 	if _, err := db.Exec(`ALTER TABLE api_keys ADD COLUMN prefix TEXT NOT NULL DEFAULT ''`); err != nil {
 		// Ignore duplicate-column errors because existing installs may
 		// already have this migration applied.
+	}
+
+	if _, err := db.Exec(`ALTER TABLE api_keys ADD COLUMN scopes TEXT NOT NULL DEFAULT '["account:read","projects:read","projects:write"]'`); err != nil {
+		// Already migrated.
 	}
 
 	if _, err := db.Exec(`ALTER TABLE api_keys ADD COLUMN last_used DATETIME`); err != nil {

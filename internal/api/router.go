@@ -310,7 +310,8 @@ func (s *Server) projectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type createAPIKeyRequest struct {
-	Name string `json:"name"`
+	Name   string   `json:"name"`
+	Scopes []string `json:"scopes"`
 }
 
 func (s *Server) apiKeysHandler(w http.ResponseWriter, r *http.Request) {
@@ -335,7 +336,7 @@ func (s *Server) apiKeysHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		apiKey, rawKey, err := apikeys.Create(s.db, user.ID, req.Name)
+		apiKey, rawKey, err := apikeys.Create(s.db, user.ID, req.Name, req.Scopes)
 		if err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 			return
