@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clicapot — Sign in</title>
+<link rel="stylesheet" href="/static/css/clicapot.css">
+</head>
+<body class="auth-page">
+<div class="auth-card">
+  <div class="brand"><span class="brand-mark">☁</span> Clicapot</div>
+  <h1>Welcome back</h1>
+  <p class="muted">Sign in to your Clicapot account.</p>
+
+  <form id="loginForm">
+    <label>Email</label>
+    <input id="email" type="email" autocomplete="email" required>
+
+    <label>Password</label>
+    <input id="password" type="password" autocomplete="current-password" required>
+
+    <button type="submit" class="primary">Sign in</button>
+    <div id="error" class="error"></div>
+  </form>
+</div>
+<script src="/static/js/login.js"></script>
+</body>
+</html>

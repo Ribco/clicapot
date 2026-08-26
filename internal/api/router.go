@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -20,6 +21,31 @@ func NewRouter(db *sql.DB) http.Handler {
 	s := &Server{db: db}
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		data, err := os.ReadFile("web/templates/login.html")
+		if err != nil {
+			http.Error(w, "frontend unavailable", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write(data)
+	})
+
+	mux.HandleFunc("/dashboard", func(w http.ResponseWriter, r *http.Request) {
+		data, err := os.ReadFile("web/templates/dashboard.html")
+		if err != nil {
+			http.Error(w, "frontend unavailable", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write(data)
+	})
+
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
 	mux.HandleFunc("/health", healthHandler)
 	mux.HandleFunc("/api/v1/status", s.statusHandler)
@@ -143,6 +169,16 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	http.SetCookie(w, &http.Cookie{
+		Name:     "clicapot_session",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   false,
+		MaxAge:   86400 * 30,
+	})
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"user":  user,
 		"token": token,
@@ -151,6 +187,12 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
 	token := bearerToken(r)
+
+	if token == "" {
+		if cookie, err := r.Cookie("clicapot_session"); err == nil {
+			token = strings.TrimSpace(cookie.Value)
+		}
+	}
 
 	if token == "" {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
@@ -165,6 +207,16 @@ func (s *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "clicapot_session",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   false,
+		MaxAge:   -1,
+	})
 
 	writeJSON(w, http.StatusOK, map[string]string{
 		"status": "logged out",
@@ -412,6 +464,12 @@ func (s *Server) requireScope(w http.ResponseWriter, r *http.Request, scope stri
 
 func (s *Server) requireUser(w http.ResponseWriter, r *http.Request) (auth.User, bool) {
 	token := bearerToken(r)
+
+	if token == "" {
+		if cookie, err := r.Cookie("clicapot_session"); err == nil {
+			token = strings.TrimSpace(cookie.Value)
+		}
+	}
 
 	if token == "" {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
