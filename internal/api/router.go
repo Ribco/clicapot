@@ -10,6 +10,7 @@ import (
 
 	"github.com/Ribco/clicapot/internal/apikeys"
 	"github.com/Ribco/clicapot/internal/auth"
+	"github.com/Ribco/clicapot/internal/dns"
 	"github.com/Ribco/clicapot/internal/projects"
 )
 
@@ -68,6 +69,9 @@ func NewRouter(db *sql.DB) http.Handler {
 
 	mux.HandleFunc("/api/v1/projects", s.projectsHandler)
 	mux.HandleFunc("/api/v1/projects/", s.projectHandler)
+	mux.HandleFunc("/api/v1/dns/zones", s.dnsZonesHandler)
+	mux.HandleFunc("/api/v1/dns/zones/", s.dnsZoneHandler)
+
 	mux.HandleFunc("/api/v1/api-keys", s.apiKeysHandler)
 	mux.HandleFunc("/api/v1/api-keys/", s.apiKeyHandler)
 
@@ -547,4 +551,216 @@ func writeJSON(w http.ResponseWriter, status int, value interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
+}
+
+type dnsZoneRequest struct {
+	Name string `json:"name"`
+}
+
+type dnsRecordRequest struct {
+	Type     string `json:"type"`
+	Name     string `json:"name"`
+	Content  string `json:"content"`
+	TTL      int    `json:"ttl"`
+	Priority *int   `json:"priority"`
+}
+
+func (s *Server) dnsZonesHandler(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		zones, err := dns.ListZones(s.db, user.ID)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to list DNS zones",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"zones": zones,
+		})
+
+	case http.MethodPost:
+		var req dnsZoneRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "invalid JSON",
+			})
+			return
+		}
+
+		zone, err := dns.CreateZone(s.db, user.ID, req.Name)
+		if err == dns.ErrExists {
+			writeJSON(w, http.StatusConflict, map[string]string{
+				"error": "zone already exists",
+			})
+			return
+		}
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, map[string]interface{}{
+			"zone": zone,
+		})
+
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+			"error": "method not allowed",
+		})
+	}
+}
+
+func (s *Server) dnsZoneHandler(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+
+	idText := strings.TrimPrefix(r.URL.Path, "/api/v1/dns/zones/")
+	parts := strings.Split(strings.Trim(idText, "/"), "/")
+
+	if len(parts) == 0 || parts[0] == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid zone id",
+		})
+		return
+	}
+
+	zoneID, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil || zoneID <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid zone id",
+		})
+		return
+	}
+
+	if len(parts) == 1 {
+		if r.Method != http.MethodDelete {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+				"error": "method not allowed",
+			})
+			return
+		}
+
+		if err := dns.DeleteZone(s.db, user.ID, zoneID); err == dns.ErrNotFound {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "zone not found",
+			})
+			return
+		} else if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to delete zone",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusOK, map[string]string{
+			"status": "deleted",
+		})
+		return
+	}
+
+	if parts[1] != "records" {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": "not found",
+		})
+		return
+	}
+
+	if len(parts) == 2 && r.Method == http.MethodGet {
+		records, err := dns.ListRecords(s.db, user.ID, zoneID)
+		if err == dns.ErrNotFound {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "zone not found",
+			})
+			return
+		}
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to list records",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"records": records,
+		})
+		return
+	}
+
+	if len(parts) == 2 && r.Method == http.MethodPost {
+		var req dnsRecordRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "invalid JSON",
+			})
+			return
+		}
+
+		record, err := dns.CreateRecord(s.db, user.ID, zoneID, dns.Record{
+			Type:     req.Type,
+			Name:     req.Name,
+			Content:  req.Content,
+			TTL:      req.TTL,
+			Priority: req.Priority,
+		})
+
+		if err == dns.ErrNotFound {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "zone not found",
+			})
+			return
+		}
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, map[string]interface{}{
+			"record": record,
+		})
+		return
+	}
+
+	if len(parts) == 3 && parts[1] == "records" && r.Method == http.MethodDelete {
+		recordID, err := strconv.ParseInt(parts[2], 10, 64)
+		if err != nil || recordID <= 0 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "invalid record id",
+			})
+			return
+		}
+
+		if err := dns.DeleteRecord(s.db, user.ID, zoneID, recordID); err == dns.ErrNotFound {
+			writeJSON(w, http.StatusNotFound, map[string]string{
+				"error": "record not found",
+			})
+			return
+		} else if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to delete record",
+			})
+			return
+		}
+
+		writeJSON(w, http.StatusOK, map[string]string{
+			"status": "deleted",
+		})
+		return
+	}
+
+	writeJSON(w, http.StatusMethodNotAllowed, map[string]string{
+		"error": "method not allowed",
+	})
 }

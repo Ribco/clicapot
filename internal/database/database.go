@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 
 	_ "modernc.org/sqlite"
+
+	"github.com/Ribco/clicapot/internal/dns"
 )
 
 func Open(dataDir string) (*sql.DB, error) {
@@ -83,6 +85,10 @@ func Migrate(db *sql.DB) error {
 
 	if _, err := db.Exec(`ALTER TABLE api_keys ADD COLUMN last_used DATETIME`); err != nil {
 		// Same deal: safe to ignore if the column already exists.
+	}
+
+	if err := dns.Migrate(db); err != nil {
+		return err
 	}
 
 	return nil
