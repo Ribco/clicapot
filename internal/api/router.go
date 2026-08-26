@@ -195,6 +195,9 @@ func (s *Server) projectsHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
+		if !s.requireScope(w, r, "projects:read") {
+			return
+		}
 		result, err := projects.List(s.db, user.ID)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{
@@ -208,6 +211,9 @@ func (s *Server) projectsHandler(w http.ResponseWriter, r *http.Request) {
 		})
 
 	case http.MethodPost:
+		if !s.requireScope(w, r, "projects:write") {
+			return
+		}
 		var req projectRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -261,6 +267,10 @@ func (s *Server) projectHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
+		if !s.requireScope(w, r, "projects:read") {
+			return
+		}
+
 		project, err := projects.Get(s.db, user.ID, id)
 
 		if err == projects.ErrNotFound {
@@ -282,6 +292,10 @@ func (s *Server) projectHandler(w http.ResponseWriter, r *http.Request) {
 		})
 
 	case http.MethodDelete:
+		if !s.requireScope(w, r, "projects:write") {
+			return
+		}
+
 		err := projects.Delete(s.db, user.ID, id)
 
 		if err == projects.ErrNotFound {
@@ -380,6 +394,20 @@ func (s *Server) apiKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+func (s *Server) requireScope(w http.ResponseWriter, r *http.Request, scope string) bool {
+	token := bearerToken(r)
+
+	if strings.HasPrefix(token, "cp_") && !apikeys.HasScope(s.db, token, scope) {
+		writeJSON(w, http.StatusForbidden, map[string]string{
+			"error": "insufficient permissions",
+			"scope": scope,
+		})
+		return false
+	}
+
+	return true
 }
 
 func (s *Server) requireUser(w http.ResponseWriter, r *http.Request) (auth.User, bool) {
