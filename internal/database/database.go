@@ -14,7 +14,6 @@ func Open(dataDir string) (*sql.DB, error) {
 	}
 
 	path := filepath.Join(dataDir, "clicapot.db")
-
 	return sql.Open("sqlite", path)
 }
 
@@ -67,6 +66,19 @@ func Migrate(db *sql.DB) error {
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 		);
 	`)
+	if err != nil {
+		return err
+	}
 
-	return err
+	// Lightweight v0.1 migrations for existing databases.
+	if _, err := db.Exec(`ALTER TABLE api_keys ADD COLUMN prefix TEXT NOT NULL DEFAULT ''`); err != nil {
+		// Ignore duplicate-column errors because existing installs may
+		// already have this migration applied.
+	}
+
+	if _, err := db.Exec(`ALTER TABLE api_keys ADD COLUMN last_used DATETIME`); err != nil {
+		// Same deal: safe to ignore if the column already exists.
+	}
+
+	return nil
 }
