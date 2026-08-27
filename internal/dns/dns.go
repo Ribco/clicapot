@@ -32,7 +32,20 @@ type Record struct {
 }
 
 func Migrate(db *sql.DB) error {
-	_, err := db.Exec(`
+	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS nameservers (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		hostname TEXT NOT NULL UNIQUE,
+		ip_address TEXT,
+		enabled INTEGER NOT NULL DEFAULT 1,
+		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+	INSERT OR IGNORE INTO nameservers (hostname) VALUES
+		('ns1.quackify.qzz.io'),
+		('ns2.quackify.qzz.io');`)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS dns_zones (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			user_id INTEGER NOT NULL,
