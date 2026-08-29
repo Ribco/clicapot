@@ -7,6 +7,7 @@ import (
 
 	"github.com/Ribco/clicapot/internal/api"
 	"github.com/Ribco/clicapot/internal/database"
+	"github.com/Ribco/clicapot/internal/dnsserver"
 )
 
 func main() {
@@ -26,6 +27,11 @@ func main() {
 	}
 
 	router := api.NewRouter(db)
+
+	dns := dnsserver.New(db, ":8053")
+	if err := dns.Start(); err != nil {
+		log.Fatal(err)
+	}
 
 	log.Println("☁️ Clicapot v0.1.0")
 	log.Println("🚀 Listening on :8000")

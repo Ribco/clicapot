@@ -40,8 +40,8 @@ func Migrate(db *sql.DB) error {
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);
 	INSERT OR IGNORE INTO nameservers (hostname) VALUES
-		('ns1.quackify.qzz.io'),
-		('ns2.quackify.qzz.io');`)
+		('cloud.quackify.qzz.io'),
+		('edge.quackify.qzz.io');`)
 	if err != nil {
 		return err
 	}
@@ -269,4 +269,62 @@ func DeleteRecord(db *sql.DB, userID, zoneID, recordID int64) error {
 	}
 
 	return nil
+}
+
+func ListAllZones(db *sql.DB) ([]Zone, error) {
+	rows, err := db.Query(`
+		SELECT id, user_id, name, status, created_at
+		FROM dns_zones
+		ORDER BY id DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []Zone
+	for rows.Next() {
+		var z Zone
+		if err := rows.Scan(&z.ID, &z.UserID, &z.Name, &z.Status, &z.CreatedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, z)
+	}
+
+	if result == nil {
+		result = []Zone{}
+	}
+
+	return result, rows.Err()
+}
+
+func ListAllRecords(db *sql.DB, zoneID int64) ([]Record, error) {
+	rows, err := db.Query(`
+		SELECT id, zone_id, type, name, content, ttl, priority, created_at
+		FROM dns_records
+		WHERE zone_id = ?
+		ORDER BY id ASC
+	`, zoneID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []Record
+	for rows.Next() {
+		var r Record
+		if err := rows.Scan(
+			&r.ID, &r.ZoneID, &r.Type, &r.Name,
+			&r.Content, &r.TTL, &r.Priority, &r.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		result = append(result, r)
+	}
+
+	if result == nil {
+		result = []Record{}
+	}
+
+	return result, rows.Err()
 }
